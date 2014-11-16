@@ -6,6 +6,12 @@ $(document).ready( function() {
 		var tags = $(this).find("input[name='tags']").val();
 		getUnanswered(tags);
 	});
+
+	$('.inspiration-getter').submit( function(event) {
+		$('.results').html('');
+		var answerers = $(this).find("input[name='answerers']").val();
+		getAnswerer(answerers);
+	});
 });
 
 // this function takes the question object returned by StackOverflow
@@ -41,6 +47,21 @@ var showQuestion = function(question) {
 	return result;
 };
 
+var showAnswerer = function(item) {
+	var result = $('.templates .answerer').clone();
+
+	var userElem = result.find('.username a');
+	userElem.attr('href', item.user.link);
+	userElem.text(item.user.display_name);
+
+	var image = result.find('.user-image img');
+	image.attr('src', item.user.profile_image);
+
+	var reputation = result.find('.reputation');
+	reputation.text(item.user.reputation);
+
+	return result;
+};
 
 // this function takes the results object from StackOverflow
 // and creates info about search results to be appended to DOM
@@ -84,9 +105,37 @@ var getUnanswered = function(tags) {
 		});
 	})
 	.fail(function(jqXHR, textStatus, errorThrown){
-		console.log(jqXHR);
-		console.log(textStatus);
-		console.log(errorThrown);
+		var errorElem = showError(textStatus);
+		$('.search-results').append(errorElem);
+	});
+};
+
+var getAnswerer = function(answerers) {
+
+	var request = {
+		tagged: answerers,
+		site: 'stackoverflow'//,
+		// order: ,
+		// sort:
+	};
+
+	var result = $.ajax({
+		url: 'http://api.stackexchange.com/2.2/tags/'+answerers+"/top-answerers/all_time",
+		data: request,
+		dataType: 'jsonp',
+		type: "GET"
+	})
+	.done( function(result){
+		var searchResults = showSearchResults(request.tagged, result.items.length);
+
+		$('.search-results').html(searchResults);
+
+		$.each(result.items, function(i, item) {
+			var answerer = showAnswerer(item);
+			$('.results').append(answerer);
+		});
+	})
+	.fail(function(jqXHR, textStatus, errorThrown) {
 		var errorElem = showError(textStatus);
 		$('.search-results').append(errorElem);
 	});
